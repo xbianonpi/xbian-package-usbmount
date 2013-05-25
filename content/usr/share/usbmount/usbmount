@@ -145,7 +145,7 @@ if [ "$ACTION" = add ]; then
 		fi
 
 		if test -n "$UUID" && test -n "$LABEL"; then
-			mountpoint="${LABEL}_${UUID}"
+			mountpoint="${LABEL}-${UUID}"
 		else
 			mountpoint="$LABEL$UUID"
 		fi
