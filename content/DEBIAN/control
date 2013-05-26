@@ -4,7 +4,7 @@ Version: 1.0
 Section: utils
 Essential: No
 Priority: extra
-Architecture: armhf
+Architecture: all
 Replaces: usbmount
 Depends: lockfile-progs, udev, util-linux (>> 2.16)
 Conflicts: usbmount
