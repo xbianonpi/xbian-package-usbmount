@@ -152,7 +152,7 @@ if [ "$ACTION" = add ]; then
 		fi
 
 		counter=""
-		while [ -d "/media/$mountpoint$counter" -a mountpoint -q "/media/$mountpoint$counter" ]; do [ -z "$counter" ] && counter='0'; counter=$(($counter + 1)); done
+		while { test -d "/media/$mountpoint$counter" && mountpoint -q "/media/$mountpoint$counter"; }; do [ -z "$counter" ] && counter='0'; counter=$(($counter + 1)); done
 		[ ! -d "/media/$mountpoint$counter" ] && mkdir -p "/media/$mountpoint$counter"
 		[ -e "/var/run/usbmount/$mountpoint$counter" ] || touch "/var/run/usbmount/$mountpoint$counter"
 
