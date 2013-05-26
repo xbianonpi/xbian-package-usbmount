@@ -200,6 +200,9 @@ if [ "$ACTION" = add ]; then
 	    fi
 	fi
     fi
+    # do a copy of /proc/mounts
+    cat /proc/mounts > /var/run/usbmount/proc-mounts
+
 elif [ "$ACTION" = remove ]; then
 
     # A block or partition device has been removed.
@@ -210,7 +213,7 @@ elif [ "$ACTION" = remove ]; then
 	    # this script, unmount the filesystem.
 	    if in_list "$fstype" "$FILESYSTEMS"; then
 		log info "executing command: umount $mountpoint"
-		while ! umount "$mountpoint" > /dev/null 2>&1; do sleep 1; done
+		mountpoint -q "$mountpoint" && while ! umount "$mountpoint" > /dev/null 2>&1; do sleep 1; done || true
 		if [ -e "/var/run/usbmount/$(basename $mountpoint)" ]; then
 			rmdir "$mountpoint"
 			rm "/var/run/usbmount/$(basename $mountpoint)"
@@ -225,7 +228,7 @@ elif [ "$ACTION" = remove ]; then
 	    fi
 	    break
 	fi
-    done < /proc/mounts
+    done < /var/run/usbmount/proc-mounts
 else
     log err "unexpected: action '$1'"
     exit 1
