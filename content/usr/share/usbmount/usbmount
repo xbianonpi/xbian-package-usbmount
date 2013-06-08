@@ -101,8 +101,9 @@ if [ "$ACTION" = add ]; then
     #   can contain spaces, which makes things a little bit less comfortable).
     DEVINFO=$(/sbin/blkid -p $DEVNAME)
     FSTYPE=$(echo "$DEVINFO" | sed 's/.*[[:blank:]]TYPE="\([^"]*\)".*/\1/g; s/[[:blank:]]*//g;')
-    #UUID=$(echo "$DEVINFO"   | sed 's/.*[[:blank:]]UUID="\([^"]*\)".*/\1/g; s/[[:blank:]]*//g;')
+    UUID=$(echo "$DEVINFO"   | sed 's/.*[[:blank:]]UUID="\([^"]*\)".*/\1/g; s/[[:blank:]]*//g;')
     USAGE=$(echo "$DEVINFO"  | sed 's/.*[[:blank:]]USAGE="\([^"]*\)".*/\1/g; s/[[:blank:]]*//g;')
+    LABEL=$(/sbin/blkid -p -s LABEL -o value $DEVNAME)
 
     if ! echo $USAGE | egrep -q "(filesystem|disklabel)"; then
 	log info "$DEVNAME does not contain a filesystem or disklabel"
@@ -203,6 +204,9 @@ if [ "$ACTION" = add ]; then
 	    fi
 	fi
     fi
+    # check whether this was mounted before under different dir
+    prevdir=$(grep $DEVNAME /var/run/usbmount/proc-mounts | awk '{print $2}')
+    [ -n "$prevdir" ] && [ -e "/var/run/usbmount/$(basename $prevdir)" ] && [ "/media/$mountpoint$counter" != "$prevdir" ] && rmdir "$prevdir" || true
     # do a copy of /proc/mounts
     cat /proc/mounts > /var/run/usbmount/proc-mounts
 
