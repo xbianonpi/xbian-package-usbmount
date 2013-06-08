@@ -82,8 +82,10 @@ umask 022
 
 log info "--> running action $ACTION on device $DEVNAME"
 
-UUID=$(echo "$ID_FS_UUID" | sed 's/ /_/g; s/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ._-]//g')
-LABEL=$(echo "$ID_FS_LABEL"| sed 's/ /_/g; s/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ._-]//g')
+if [ "$ACTION" != add -a "$ACTION" != "remove" ]; then
+        ACTION=add
+        DEVNAME=$1
+fi
 
 if [ "$ACTION" = add ]; then
 
