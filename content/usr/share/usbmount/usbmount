@@ -215,6 +215,8 @@ elif [ "$ACTION" = remove ]; then
 	    if in_list "$fstype" "$FILESYSTEMS"; then
 		log info "executing command: umount $mountpoint"
 		mountpoint -q "$mountpoint" && while ! umount "$mountpoint" > /dev/null 2>&1; do sleep 1; done || true
+		timeout=0
+		mountpoint -q "$mountpoint" && while ! umount "$mountpoint" > /dev/null 2>&1; do sleep 1; timeout=$(($timeout+1)); [ $timeout -gt 10 ] && break; done || true
 		if [ -e "/var/run/usbmount/$(basename $mountpoint)" ]; then
 			rmdir "$mountpoint"
 			rm "/var/run/usbmount/$(basename $mountpoint)"
