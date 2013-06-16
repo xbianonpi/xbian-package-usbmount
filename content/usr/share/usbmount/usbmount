@@ -89,6 +89,11 @@ fi
 
 if [ "$ACTION" = add ]; then
 
+    if findmnt $DEVNAME > /dev/null; then
+        log info "$DEVNAME already mounted. exiting"
+        exit 0
+    fi
+
     # Acquire lock.
     log debug "trying to acquire lock /var/run/usbmount/.mount.lock"
     lockfile-create --retry 100 /var/run/usbmount/.mount || \
