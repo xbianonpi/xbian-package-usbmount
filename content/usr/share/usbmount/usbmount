@@ -224,7 +224,8 @@ elif [ "$ACTION" = remove ]; then
 
     # A block or partition device has been removed.
     # Test if it is mounted.
-    while read device mountpoint fstype remainder; do
+    cat /proc/mounts | sort -k2r \
+    | while read device mountpoint fstype remainder; do
 	if [ "$DEVNAME" = "$device" ]; then
 	    # If the mountpoint and filesystem type are maintained by
 	    # this script, unmount the filesystem.
@@ -244,9 +245,8 @@ elif [ "$ACTION" = remove ]; then
 		log info "executing command: run-parts /etc/usbmount/umount.d"
 		run-parts /etc/usbmount/umount.d || :
 	    fi
-	    break
 	fi
-    done < /var/run/usbmount/proc-mounts
+    done
 else
     log err "unexpected: action '$1'"
     exit 1
