@@ -54,6 +54,7 @@ FILESYSTEMS=
 MOUNTOPTIONS=
 FS_MOUNTOPTIONS=
 VERBOSE=no
+STARTUDISKS=0
 ACTION=$1
 
 if [ -r /etc/usbmount/usbmount.conf ]; then
@@ -86,6 +87,8 @@ if [ "$ACTION" != add -a "$ACTION" != "remove" ]; then
         ACTION=add
         DEVNAME=$1
 fi
+
+[ "$STARTUDISKS" -eq '1' -o "$STARTUDISKS" = "yes" ] && ! pgrep udisks-daemon && /usr/lib/udisks/udisks-daemon &
 
 if [ "$ACTION" = add ]; then
 
