@@ -43,6 +43,10 @@ clean_up() {
     for f in $(ls -d /media/*); do [ ! $(mountpoint -q $f) ] && rmdir $f || true; done
 }
 
+udisks_load() {
+    ! pgrep udisks-daemon >/dev/null || return 0
+    start-stop-daemon -b --start --exec /usr/lib/udisks/udisks-daemon -- --helper-dir=/usr/lib/udisks
+}
 
 ######################################################################
 # Main program
@@ -88,7 +92,7 @@ if [ "$ACTION" != add -a "$ACTION" != "remove" ]; then
         DEVNAME=$1
 fi
 
-[ "$STARTUDISKS" -eq '1' -o "$STARTUDISKS" = "yes" ] && ! pgrep udisks-daemon && /usr/lib/udisks/udisks-daemon &
+[ "$STARTUDISKS" -eq '1' -o "$STARTUDISKS" = "yes" ] && udisks_load 
 
 if [ "$ACTION" = add ]; then
 
@@ -198,7 +202,7 @@ if [ "$ACTION" = add ]; then
 
 		# Run hook scripts; ignore errors.
 		export UM_DEVICE="$DEVNAME"
-		export UM_MOUNTPOINT="$mountpoint"
+		export UM_MOUNTPOINT="$mountpoint$counter"
 		export UM_FILESYSTEM="$fstype"
 		export UM_MOUNTOPTIONS="$options"
 		export UM_VENDOR="$vendor"

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+counter=0
+while test -e /media/usb$counter; do counter=$(($counter + 1)); done
+
+ln -s /media/$UM_MOUNTPOINT /media/usb$counter || exit 1
+
+exit 0
