@@ -1,5 +1,7 @@
 #!/bin/sh
 
+/etc/usbmount/umount.d/$0
+
 counter=0
 while test -e /media/usb$counter; do counter=$(($counter + 1)); done
 
