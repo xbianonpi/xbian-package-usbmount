@@ -1,0 +1,3 @@
+#!/bin/sh
+
+for f in $(find /media/usb*); do [ ! -e $f ] && rm $f; done
