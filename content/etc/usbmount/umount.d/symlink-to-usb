@@ -1,5 +1,16 @@
 #!/bin/sh
 
-for f in $(find /media/usb*); do [ ! -e $f ] && rm $f; done
+
+for f in $(find  /media  -maxdepth 1 -type d); do 
+    keep_first=1
+    for g in $(find  /media  -maxdepth 1 -type l ); do
+	if [ $keep_first -eq 1 ]; then
+	    keep_first=0
+	    continue
+	fi
+	
+	test $(readlink -e $g) = $f && rm $g
+    done
+done
 
 exit 0
