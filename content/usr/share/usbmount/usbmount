@@ -15,6 +15,10 @@
 #
 set -e
 exec > /dev/null 2>&1
+if [ -z "$nobg" ]; then
+    nobg=true /usr/share/usbmount/usbmount $1 & 
+    exit 0
+fi
 
 ######################################################################
 # Auxiliary functions
@@ -45,7 +49,9 @@ clean_up() {
 
 udisks_load() {
     ! pgrep udisks-daemon >/dev/null || return 0
+    test -x /usr/lib/udisks/udisks-daemon || return 1
     start-stop-daemon -b --start --exec /usr/lib/udisks/udisks-daemon -- --helper-dir=/usr/lib/udisks
+    while test -z "$(ps ax| grep -e "udisks-daemon.*polling.*"| grep -v grep)"; do sleep 1; done
 }
 
 ######################################################################
@@ -216,14 +222,6 @@ if [ "$ACTION" = add ]; then
 	    fi
 	fi
     fi
-    log info "cleaning up mnt dirs"
-    # clean up old not deleted dirs (not fixed mountpoints defined in /etc/fstab)
-    fstabdirs=$(while read dev mntdir stuff; do test -n "$mntdir" && test "$(dirname $mntdir)" = "/media" && printf "%s\n" $mntdir ; done < /etc/fstab; true)
-    for d in $(ls /media); do
-	if ! in_list "/media/$d" "$fstabdirs"; then
-	    mountpoint -q /media/$d || rmdir /media/$d
-	fi
-    done
     # do a copy of /proc/mounts
     cat /proc/mounts > /var/run/usbmount/proc-mounts
 
