@@ -50,8 +50,12 @@ clean_up() {
 udisks_load() {
     ! pgrep udisks-daemon >/dev/null || return 0
     test -x /usr/lib/udisks/udisks-daemon || return 1
-    start-stop-daemon -b --start --exec /usr/lib/udisks/udisks-daemon -- --helper-dir=/usr/lib/udisks
-    while test -z "$(ps ax| grep -e "udisks-daemon.*polling.*"| grep -v grep)"; do sleep 1; done
+    /usr/lib/udisks/udisks-daemon &
+    if $(timeout 10s sh -c "while test -z \"$(ps ax| grep -e \"udisks-daemon.*polling.*\"| grep -v grep)\"; do sleep 1; done"; echo $?) -eq 124; then 
+        log err "couldn't start udisks daemon"
+        return 1
+    fi
+    
 }
 
 ######################################################################
