@@ -44,7 +44,7 @@ in_list()
 
 clean_up() {
     log info "cleaning up"
-    for f in $(ls -d /media/*); do [ ! $(mountpoint -q $f) ] && rmdir $f || true; done
+    for f in $(ls -d $MNTPNTDIR/*); do [ ! $(mountpoint -q $f) ] && rmdir $f || true; done
 }
 
 udisks_load() {
@@ -177,13 +177,13 @@ if [ "$ACTION" = add ]; then
 		fi
 
 		counter=""
-		while { test -d "/media/$mountpoint$counter" && mountpoint -q "/media/$mountpoint$counter"; }; do [ -z "$counter" ] && counter='0'; counter=$(($counter + 1)); done
-		[ ! -d "/media/$mountpoint$counter" ] && mkdir -p "/media/$mountpoint$counter"
+		while { test -d "$MNTPNTDIR/$mountpoint$counter" && mountpoint -q "$MNTPNTDIR/$mountpoint$counter"; }; do [ -z "$counter" ] && counter='0'; counter=$(($counter + 1)); done
+		[ ! -d "$MNTPNTDIR/$mountpoint$counter" ] && mkdir -p "$MNTPNTDIR/$mountpoint$counter"
 		[ -e "/var/run/usbmount/$mountpoint$counter" ] || touch "/var/run/usbmount/$mountpoint$counter"
 
 		# Mount the filesystem.
 		log info "executing command: mount -t$fstype ${options:+-o$options} $DEVNAME $mountpoint"
-		mount "-t$fstype" "${options:+-o$options}" "$DEVNAME" "/media/$mountpoint$counter"
+		mount "-t$fstype" "${options:+-o$options}" "$DEVNAME" "$MNTPNTDIR/$mountpoint$counter"
 
 		# Determine vendor and model.
 		vendor=
@@ -212,7 +212,7 @@ if [ "$ACTION" = add ]; then
 
 		# Run hook scripts; ignore errors.
 		export UM_DEVICE="$DEVNAME"
-		export UM_MOUNTPOINT="$mountpoint$counter"
+		export UM_MOUNTPOINT="$MNTPNTDIR/$mountpoint$counter"
 		export UM_FILESYSTEM="$fstype"
 		export UM_MOUNTOPTIONS="$options"
 		export UM_VENDOR="$vendor"

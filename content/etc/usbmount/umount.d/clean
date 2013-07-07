@@ -1,0 +1,10 @@
+#!/bin/sh
+
+. /etc/usbmount/usbmount.conf
+
+    for g in $(find  $LINKDIR  -maxdepth 1 -type l ); do
+        d="$(readlink $g)"; d=${d%/}
+        if [ "$d" = "$UM_MOUNTPOINT" ]; then
+            rm "$g"
+        fi
+    done
