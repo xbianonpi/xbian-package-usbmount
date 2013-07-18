@@ -127,7 +127,20 @@ if [ "$ACTION" = add ]; then
     USAGE=$(echo "$DEVINFO"  | sed 's/.*[[:blank:]]USAGE="\([^"]*\)".*/\1/g; s/[[:blank:]]*//g;')
     LABEL=$(/sbin/blkid -p -s LABEL -o value $DEVNAME)
 
-    if ! echo $USAGE | egrep -q "(filesystem|disklabel)"; then
+
+    if test $FSTYPE = swap; then
+        prio=0
+        if grep "^[[:blank:]]*UUID=$UUID" /etc/fstab | grep swap | grep -q 'pri='; then
+            prio=$(grep "^[[:blank:]]*UUID=$UUID" /etc/fstab | grep swap | grep 'pri='| awk '{print $4}')
+        elif egrep -q "^[[:blank:]]*$DEVNAME" /etc/fstab| grep swap | grep -q 'pri='; then
+            prio=$(egrep -q "^[[:blank:]]*$DEVNAME" /etc/fstab| grep swap | grep 'pri='|awk '{print $4}')
+        fi
+        prio=${prio%,*}; prio=${prio#*pri=}
+
+        swapon -p $prio $DEVNAME
+        log info "$DEVNAME activated swap"
+        exit 0
+    elif ! echo $USAGE | egrep -q "(filesystem|disklabel)"; then
 	log info "$DEVNAME does not contain a filesystem or disklabel"
 	exit 1
     fi
