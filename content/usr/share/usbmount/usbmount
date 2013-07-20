@@ -15,10 +15,10 @@
 #
 set -e
 exec > /dev/null 2>&1
-if [ -z "$nobg" ]; then
-    nobg=true /usr/share/usbmount/usbmount $1 & 
-    exit 0
-fi
+#if [ -z "$nobg" ]; then
+#    nobg=true /usr/share/usbmount/usbmount $1 & 
+#    exit 0
+#fi
 
 ######################################################################
 # Auxiliary functions
@@ -147,18 +147,22 @@ if [ "$ACTION" = add ]; then
 
     # Try to use specifications in /etc/fstab first.
     if egrep -q "^[[:blank:]]*$DEVNAME" /etc/fstab; then
+	mountpoint=$(grep -e "^[[:blank:]]*$DEVNAME" /etc/fstab | awk '{print $2}')
+	initctl emit -n mounting MOUNTPOINT=$mountpoint
 	log info "executing command: mount $DEVNAME"
 	mount $DEVNAME || log err "mount by DEVNAME with $DEVNAME wasn't successful; return code $?"
 
     elif grep -q "^[[:blank:]]*UUID=$UUID" /etc/fstab; then
         log info "executing command: mount -U '$UUID'"
 	mountpoint=$(grep "^[[:blank:]]*UUID=$UUID" /etc/fstab | awk '{print $2}')
+	initctl emit -n mounting MOUNTPOINT=$mountpoint
 	[ -d "$mountpoint" ] || mkdir -p "$mountpoint"
 	mount -U $UUID || log err "mount by UUID with $UUID wasn't successful; return code $?"
 
     elif [ "$(grep -c "^[[:blank:]]*LABEL=$LABEL" /etc/fstab)" -eq 1 -a -n "$LABEL" ]; then
         log info "executing command: mount -L '$LABEL'"
 	mountpoint=$(grep "^[[:blank:]]*LABEL=$LABEL" /etc/fstab | awk '{print $2}')
+	initctl emit -n mounting MOUNTPOINT=$mountpoint
 	[ -d "$mountpoint" ] || mkdir -p "$mountpoint"
 	mount -L $LABEL || log err "mount by LABEL with $LABEL wasn't successful; return code $?"
 
@@ -194,8 +198,9 @@ if [ "$ACTION" = add ]; then
 		[ ! -d "$MNTPNTDIR/$mountpoint$counter" ] && mkdir -p "$MNTPNTDIR/$mountpoint$counter"
 		[ -e "/var/run/usbmount/$mountpoint$counter" ] || touch "/var/run/usbmount/$mountpoint$counter"
 
+		initctl emit -n mounting MOUNTPOINT=$MNTPNTDIR/$mountpoint$counter
 		# Mount the filesystem.
-		log info "executing command: mount -t$fstype ${options:+-o$options} $DEVNAME $mountpoint"
+		log info "executing command: mount -t$fstype ${options:+-o$options} $DEVNAME $MNTPNTDIR/$mountpoint$counter"
 		mount "-t$fstype" "${options:+-o$options}" "$DEVNAME" "$MNTPNTDIR/$mountpoint$counter"
 
 		# Determine vendor and model.
@@ -232,6 +237,8 @@ if [ "$ACTION" = add ]; then
 		export UM_MODEL="$model"
 		log info "executing command: run-parts /etc/usbmount/mount.d"
 		run-parts /etc/usbmount/mount.d || :
+
+		mountpoint=$MNTPNTDIR/$mountpoint$counter
 	    else
 		# No suitable mount point found.
 		log warning "no mountpoint found for $DEVNAME"
@@ -239,6 +246,7 @@ if [ "$ACTION" = add ]; then
 	    fi
 	fi
     fi
+    initctl emit -n mounted MOUNTPOINT=$mountpoint
     # do a copy of /proc/mounts
     cat /proc/mounts > /var/run/usbmount/proc-mounts
 
