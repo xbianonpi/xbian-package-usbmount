@@ -1,6 +1,6 @@
 Origin: XBian
 Package: xbian-package-usbmount
-Version: 1.0-0.7
+Version: 1.0-1
 Section: utils
 Essential: No
 Priority: extra
