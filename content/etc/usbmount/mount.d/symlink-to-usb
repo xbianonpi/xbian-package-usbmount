@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . /etc/usbmount/usbmount.conf
 
@@ -14,32 +14,36 @@ in_list()
 
 # clean up old not deleted dirs (not fixed mountpoints defined in /etc/fstab)
 fstabdirs=$(while read dev mntdir stuff; do test -n "$mntdir" && test "$(dirname $mntdir)" = "/media" && printf "%s\n" $mntdir ; done < /etc/fstab; true)
-for d in $(find  "$MNTPNTDIR" -maxdepth 1 -type d); do
+while read d
+do
     test "$d" = "$MNTPNTDIR" && continue
     if ! in_list "$d" "$fstabdirs"; then
-	mountpoint -q $d || rmdir $d
+    mountpoint -q "$d" || rmdir "$d"
     fi
-done
+done < <(find "$MNTPNTDIR" -maxdepth 1 -type d)
 
 #clean up symlinks
-for f in $(find  $MNTPNTDIR  -maxdepth 1 -type d); do 
+while read f
+do
     [ "$f" = "$MNTPNTDIR" ] && continue
     keep_first=1
-    for g in $(find  $LINKDIR  -maxdepth 1 -type l ); do
-	d="$(readlink $g)"; d=${d%/}
-	if [ "$d" = "$f" ]; then
-	    if [ $keep_first -eq 1 ]; then
-	        keep_first=0; exists=yes
-	        continue
-	    fi
-	    rm "$g"
-	fi
-    done
-done
+    while read g
+    do
+        d="$(readlink $g)"; d=${d%/}
+        if [ "$d" = "$f" ]; then
+            if [ $keep_first -eq 1 ]; then
+                keep_first=0; exists=yes
+                continue
+            fi
+            rm "$g"
+        fi
+    done < <(find "$LINKDIR" -maxdepth 1 -type l)
+done < <(find "$MNTPNTDIR" -maxdepth 1 -type d)
 
-for g in $(find  $LINKDIR  -maxdepth 1 -type l ); do
+while read g
+do
     [ ! -e "$(readlink $g)" ] && rm "$g"
-done
+done < <(find "$LINKDIR" -maxdepth 1 -type l)
 
 #do the actual stuff we wanted
 [ -z "$UM_MOUNTPOINT" -o "$exists" = yes ] && exit 0
@@ -47,6 +51,6 @@ done
 counter=0
 while test -h $LINKDIR/usb$counter; do counter=$(($counter + 1)); done
 
-ln -s $UM_MOUNTPOINT $LINKDIR/usb$counter || exit 1
+ln -s "$UM_MOUNTPOINT" $LINKDIR/usb$counter || exit 1
 
 exit 0
