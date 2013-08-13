@@ -121,16 +121,16 @@ if [ "$ACTION" = add ]; then
     # Grab device information from device and "divide it"
     #   FIXME: improvement: implement mounting by label (notice that labels
     #   can contain spaces, which makes things a little bit less comfortable).
-    DEVINFO=$(/sbin/blkid -p $DEVNAME)
+    DEVINFO="$(/sbin/blkid -p $DEVNAME)"
     FSTYPE=$(echo "$DEVINFO" | sed 's/.*[[:blank:]]TYPE="\([^"]*\)".*/\1/g; s/[[:blank:]]*//g;')
-    UUID=$(echo "$DEVINFO"   | sed 's/.*[[:blank:]]UUID="\([^"]*\)".*/\1/g; s/[[:blank:]]*//g;')
+    UUID=$(/sbin/blkid -p -s UUID -o value $DEVNAME)
     USAGE=$(echo "$DEVINFO"  | sed 's/.*[[:blank:]]USAGE="\([^"]*\)".*/\1/g; s/[[:blank:]]*//g;')
     LABEL=$(/sbin/blkid -p -s LABEL -o value $DEVNAME)
 
 
     if test $FSTYPE = swap; then
         prio=0
-        if grep "^[[:blank:]]*UUID=$UUID" /etc/fstab | grep swap | grep -q 'pri='; then
+        if test -n "$UUID" && grep "^[[:blank:]]*UUID=$UUID" /etc/fstab | grep swap | grep -q 'pri='; then
             prio=$(grep "^[[:blank:]]*UUID=$UUID" /etc/fstab | grep swap | grep 'pri='| awk '{print $4}')
         elif egrep -q "^[[:blank:]]*$DEVNAME" /etc/fstab| grep swap | grep -q 'pri='; then
             prio=$(egrep -q "^[[:blank:]]*$DEVNAME" /etc/fstab| grep swap | grep 'pri='|awk '{print $4}')
@@ -152,7 +152,7 @@ if [ "$ACTION" = add ]; then
 	log info "executing command: mount $DEVNAME"
 	mount $DEVNAME || log err "mount by DEVNAME with $DEVNAME wasn't successful; return code $?"
 
-    elif grep -q "^[[:blank:]]*UUID=$UUID" /etc/fstab; then
+    elif test -n "$UUID && "grep -q "^[[:blank:]]*UUID=$UUID" /etc/fstab; then
         log info "executing command: mount -U '$UUID'"
 	mountpoint=$(grep "^[[:blank:]]*UUID=$UUID" /etc/fstab | awk '{print $2}')
 	initctl emit -n mounting MOUNTPOINT=$mountpoint
