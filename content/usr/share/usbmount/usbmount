@@ -198,7 +198,7 @@ if [ "$ACTION" = add ]; then
 		[ ! -d "$MNTPNTDIR/$mountpoint$counter" ] && mkdir -p "$MNTPNTDIR/$mountpoint$counter"
 		[ -e "/var/run/usbmount/$mountpoint$counter" ] || touch "/var/run/usbmount/$mountpoint$counter"
 
-		initctl emit -n mounting MOUNTPOINT=$MNTPNTDIR/$mountpoint$counter
+		initctl emit -n mounting MOUNTPOINT="$MNTPNTDIR/$mountpoint$counter"
 		# Mount the filesystem.
 		log info "executing command: mount -t$fstype ${options:+-o$options} $DEVNAME $MNTPNTDIR/$mountpoint$counter"
 		mount "-t$fstype" "${options:+-o$options}" "$DEVNAME" "$MNTPNTDIR/$mountpoint$counter"
@@ -238,7 +238,7 @@ if [ "$ACTION" = add ]; then
 		log info "executing command: run-parts /etc/usbmount/mount.d"
 		run-parts /etc/usbmount/mount.d || :
 
-		mountpoint=$MNTPNTDIR/$mountpoint$counter
+		mountpoint="$MNTPNTDIR/$mountpoint$counter"
 	    else
 		# No suitable mount point found.
 		log warning "no mountpoint found for $DEVNAME"
@@ -246,7 +246,7 @@ if [ "$ACTION" = add ]; then
 	    fi
 	fi
     fi
-    initctl emit -n mounted MOUNTPOINT=$mountpoint
+    initctl emit -n mounted MOUNTPOINT="$mountpoint"
     # do a copy of /proc/mounts
     cat /proc/mounts > /var/run/usbmount/proc-mounts
 
@@ -254,18 +254,18 @@ elif [ "$ACTION" = remove ]; then
 
     # A block or partition device has been removed.
     # Test if it is mounted.
-    cat /proc/mounts | sort -k2r \
-    | while read device mountpoint fstype remainder; do
-	if [ "$DEVNAME" = "$device" ]; then
+    findmnt -S "$DEVNAME"  -n -o fstype,target -r | sort -k2r \
+    | while read fstype mountpoint; do
 	    # If the mountpoint and filesystem type are maintained by
 	    # this script, unmount the filesystem.
 	    if in_list "$fstype" "fuseblk $FILESYSTEMS"; then
 		log info "executing command: umount $mountpoint"
 		timeout=0
 		mountpoint -q "$mountpoint" && while ! umount "$mountpoint" > /dev/null 2>&1; do sleep 1; timeout=$(($timeout+1)); [ $timeout -gt 10 ] && break; done || true
-		if [ -e "/var/run/usbmount/$(basename $mountpoint)" ]; then
+		bs=$(basename "$mountpoint")
+		if [ -e "/var/run/usbmount/$bs" ]; then
 			rmdir "$mountpoint"
-			rm "/var/run/usbmount/$(basename $mountpoint)"
+			rm "/var/run/usbmount/$bs"
 		fi
 
 		# Run hook scripts; ignore errors.
@@ -275,7 +275,6 @@ elif [ "$ACTION" = remove ]; then
 		log info "executing command: run-parts /etc/usbmount/umount.d"
 		run-parts /etc/usbmount/umount.d || :
 	    fi
-	fi
     done
 else
     log err "unexpected: action '$1'"
