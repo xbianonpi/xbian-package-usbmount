@@ -198,7 +198,7 @@ if [ "$ACTION" = add ]; then
 		[ ! -d "$MNTPNTDIR/$mountpoint$counter" ] && mkdir -p "$MNTPNTDIR/$mountpoint$counter"
 		[ -e "/var/run/usbmount/$mountpoint$counter" ] || touch "/var/run/usbmount/$mountpoint$counter"
 
-		initctl emit -n mounting MOUNTPOINT="$MNTPNTDIR/$mountpoint$counter"
+		initctl emit -n mounting MOUNTPOINT="$MNTPNTDIR/$mountpoint$counter" TYPE=$FSTYPE DEVICE=$DEVNAME
 		# Mount the filesystem.
 		log info "executing command: mount -t$fstype ${options:+-o$options} $DEVNAME $MNTPNTDIR/$mountpoint$counter"
 		mount "-t$fstype" "${options:+-o$options}" "$DEVNAME" "$MNTPNTDIR/$mountpoint$counter"
