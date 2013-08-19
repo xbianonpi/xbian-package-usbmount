@@ -1,5 +1,7 @@
-# Rules for USBmount -*- conf -*-
+# set spindown
+ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="1", RUN+="/usr/share/usbmount/usbmount spindown"
 
+# Rules for USBmount -*- conf -*-
 KERNEL=="sd*", DRIVERS=="sbp2",		ACTION=="add",	RUN+="/usr/share/usbmount/usbmount add"
 KERNEL=="sd*", SUBSYSTEMS=="usb",	ACTION=="add",	RUN+="/usr/share/usbmount/usbmount add"
 KERNEL=="ub*", SUBSYSTEMS=="usb",	ACTION=="add",	RUN+="/usr/share/usbmount/usbmount add"
