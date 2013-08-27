@@ -247,6 +247,7 @@ if [ "$ACTION" = add ]; then
 	fi
     fi
     initctl emit -n mounted MOUNTPOINT="$mountpoint"
+    [ "$SHARESMB" != yes ] || net conf addshare $(basename "$mountpoint") "$mountpoint" writeable=N guest_ok=y
     # do a copy of /proc/mounts
     cat /proc/mounts > /var/run/usbmount/proc-mounts
 
@@ -259,6 +260,13 @@ elif [ "$ACTION" = remove ]; then
 	    # If the mountpoint and filesystem type are maintained by
 	    # this script, unmount the filesystem.
 	    if in_list "$fstype" "fuseblk $FILESYSTEMS"; then
+		# Run hook scripts; ignore errors.
+		export UM_DEVICE="$DEVNAME"
+		export UM_MOUNTPOINT="$mountpoint"
+		export UM_FILESYSTEM="$fstype"
+		log info "executing command: run-parts /etc/usbmount/pre-umount.d"
+		run-parts /etc/usbmount/pre-umount.d || :
+
 		log info "executing command: umount $mountpoint"
 		timeout=0
 		mountpoint -q "$mountpoint" && while ! umount "$mountpoint" > /dev/null 2>&1; do sleep 1; timeout=$(($timeout+1)); [ $timeout -gt 10 ] && break; done || true

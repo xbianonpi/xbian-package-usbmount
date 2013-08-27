@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set +e
+
+. /etc/usbmount/usbmount.conf
+
+for s in $(net conf listshares); do
+    net conf showshare $s | grep "path =" | grep -q "$UM_MOUNTPOINT" && net conf delshare $s
+done
