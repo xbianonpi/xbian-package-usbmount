@@ -1,5 +1,45 @@
 #!/bin/bash
 
 if [ $1 == "configure" ]; then
+    [ -e /etc/usbmount/usbmount.conf ] || mv /var/tmp/usbmount.conf /etc/usbmount/usbmount.conf
+
+    if [ -e /var/tmp/usbmount.conf ]; then
+        if grep -q "ENABLED=" /etc/usbmount/usbmount.conf; then
+            us="$(grep ENABLED= /etc/usbmount/usbmount.conf | grep -v 'e.g.' )"
+            eval $(echo "sed -i 's%ENABLED=1%$us%' /var/tmp/usbmount.conf")
+        fi
+        if grep -q "UUIDNAME=" /etc/usbmount/usbmount.conf; then
+            us="$(grep UUIDNAME= /etc/usbmount/usbmount.conf | grep -v 'e.g.' )"
+            eval $(echo "sed -i 's%UUIDNAME=1%$us%' /var/tmp/usbmount.conf")
+        fi
+        if grep -q "MNTPNTDIR=" /etc/usbmount/usbmount.conf; then
+            us=$(grep MNTPNTDIR= /etc/usbmount/usbmount.conf | tr "'" "\"")
+            eval $(echo "sed -i 's%MNTPNTDIR=\"/media\"%$us%' /var/tmp/usbmount.conf")
+        fi
+        if grep -q "LINKDIR=" /etc/usbmount/usbmount.conf; then
+            us=$(grep LINKDIR= /etc/usbmount/usbmount.conf | tr "'" "\"")
+            eval $(echo "sed -i 's%LINKDIR=\"/media\"%$us%' /var/tmp/usbmount.conf")
+        fi
+        if grep -q "SHARESMB=" /etc/usbmount/usbmount.conf; then
+            us=$(grep SHARESMB= /etc/usbmount/usbmount.conf)
+            eval $(echo "sed -i 's%SHARESMB=yes%$us%' /var/tmp/usbmount.conf")
+        fi
+        if grep -q "SPINDOWN=" /etc/usbmount/usbmount.conf; then
+            us=$(grep SPINDOWN= /etc/usbmount/usbmount.conf)
+            eval $(echo "sed -i 's%SPINDOWN=20%$us%' /var/tmp/usbmount.conf")
+        fi
+        if grep -q "SHARERW=" /etc/usbmount/usbmount.conf; then
+            us=$(grep SHARERW= /etc/usbmount/usbmount.conf)
+            eval $(echo "sed -i 's%SHARERW=no%$us%' /var/tmp/usbmount.conf")
+        fi
+        if grep -q "MOUNTOPTIONS=" /etc/usbmount/usbmount.conf; then
+            us=$(grep MOUNTOPTIONS= /etc/usbmount/usbmount.conf | grep -v FS_MOUNTOPTIONS)
+            eval $(echo "sed -i 's%MOUNTOPTIONS=\"sync,noexec,nodev,noatime,nodiratime,rw\"%$us%' /var/tmp/usbmount.conf")
+        fi
+
+        mv /var/tmp/usbmount.conf /etc/usbmount/usbmount.conf
+    fi
+
+
     udevadm control --reload-rules || :
 fi

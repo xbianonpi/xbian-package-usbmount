@@ -187,6 +187,8 @@ if [ "$ACTION" = add ]; then
 		    options="$MOUNTOPTIONS${options:+,$options}"
 		fi
 
+		[ "$UUIDNAME" = yes ] || { [ -z "$LABEL" ] || UUID=''; }
+
 		if test -n "$UUID" && test -n "$LABEL"; then
 			mountpoint="${LABEL}-${UUID}"
 		else
@@ -247,7 +249,16 @@ if [ "$ACTION" = add ]; then
 	fi
     fi
     initctl emit -n mounted MOUNTPOINT="$mountpoint"
-    [ "$SHARESMB" != yes ] || net conf addshare $(basename "$mountpoint") "$mountpoint" writeable=N guest_ok=y
+
+    if [ "$SHARESMB" = yes ]; then
+        [ "$SHARERW" = yes ] && smbrw=Y || smbrw=N
+        net conf addshare $(basename "$mountpoint" | tr ' ' '_') "$mountpoint" writeable=$smbrw guest_ok=y || :
+        if [ "$SHARERW" = yes ]; then
+            net conf setparm $(basename "$mountpoint" | tr ' ' '_') "force user" xbian || :
+            net conf setparm $(basename "$mountpoint" | tr ' ' '_') "browseable" yes || :
+        fi
+    fi
+
     # do a copy of /proc/mounts
     cat /proc/mounts > /var/run/usbmount/proc-mounts
 
