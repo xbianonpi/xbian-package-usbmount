@@ -1,0 +1,47 @@
+#!/bin/bash
+
+. /etc/usbmount/usbmount.conf
+
+# Test if the first parameter is in the list given by the second
+# parameter.
+in_list()
+{
+    for v in $2; do
+        [ "$1" != "$v" ] || return 0
+    done
+    return 1
+}
+
+# clean up old not deleted dirs (not fixed mountpoints defined in /etc/fstab)
+fstabdirs=$(while read dev mntdir stuff; do test -n "$mntdir" && printf "%s\n" $mntdir ; done < /etc/fstab; true)
+while read d
+do
+    test "$d" = "$MNTPNTDIR" && continue
+    if ! in_list "$d" "$fstabdirs"; then
+        mountpoint -q "$d" || { UM_MOUNTPOINT=$d /etc/usbmount/pre-umount.d/remove_share; rmdir "$d"; }
+    fi
+done < <(find "$MNTPNTDIR" -maxdepth 1 -type d)
+
+#clean up symlinks
+while read f
+do
+    [ "$f" = "$MNTPNTDIR" ] && continue
+    keep_first=1
+    while read g
+    do
+        d="$(readlink $g)"; d=${d%/}
+        if [ "$d" = "$f" ]; then
+            if [ $keep_first -eq 1 ]; then
+                keep_first=0; exists=yes
+                continue
+            fi
+            rm "$g"
+        fi
+    done < <(find "$LINKDIR" -maxdepth 1 -type l)
+done < <(find "$MNTPNTDIR" -maxdepth 1 -type d)
+
+while read g
+do
+    [ ! -e "$(readlink $g)" ] && rm "$g"
+done < <(find "$LINKDIR" -maxdepth 1 -type l)
+
