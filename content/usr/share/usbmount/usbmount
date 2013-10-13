@@ -15,10 +15,10 @@
 #
 set -e
 exec > /dev/null 2>&1
-#if [ -z "$nobg" ]; then
-#    nobg=true /usr/share/usbmount/usbmount $1 & 
-#    exit 0
-#fi
+if [ -z "$nobg" ]; then
+    nobg=true /usr/share/usbmount/usbmount $1 & 
+    exit 0
+fi
 
 ######################################################################
 # Auxiliary functions
@@ -93,6 +93,13 @@ if [ ! -e /var/run/usbmount ]; then
     log debug "creating /var/run/usbmount directory"
 fi
 
+# Acquire lock.
+log debug "trying to acquire lock /var/run/usbmount/.mount.lock"
+lockfile-create --retry 100 /var/run/usbmount/.mount || \
+    { log err "cannot acquire lock /var/run/usbmount/.mount.lock"; exit 1; }
+trap '( lockfile-remove /var/run/usbmount/.mount )' 0
+log debug "acquired lock /var/run/usbmount/.mount.lock"
+
 umask 022
 
 log info "--> running action $ACTION on device $DEVNAME"
@@ -111,12 +118,7 @@ if [ "$ACTION" = add ]; then
         exit 0
     fi
 
-    # Acquire lock.
-    log debug "trying to acquire lock /var/run/usbmount/.mount.lock"
-    lockfile-create --retry 100 /var/run/usbmount/.mount || \
-	{ log err "cannot acquire lock /var/run/usbmount/.mount.lock"; exit 1; }
-    trap '( lockfile-remove /var/run/usbmount/.mount )' 0
-    log debug "acquired lock /var/run/usbmount/.mount.lock"
+    [ "$SHARESMB" != yes ] || start -q wait-for-state TIMEOUT=100 WAIT_FOR=openbsd-inetd WAITER=usbmount$DEVNAME WAIT_STATE=started ACT=no || :
 
     # Grab device information from device and "divide it"
     #   FIXME: improvement: implement mounting by label (notice that labels
@@ -152,7 +154,7 @@ if [ "$ACTION" = add ]; then
 	log info "executing command: mount $DEVNAME"
 	mount $DEVNAME || log err "mount by DEVNAME with $DEVNAME wasn't successful; return code $?"
 
-    elif test -n "$UUID && "grep -q "^[[:blank:]]*UUID=$UUID" /etc/fstab; then
+    elif test -n "$UUID" && grep -q "^[[:blank:]]*UUID=$UUID" /etc/fstab; then
         log info "executing command: mount -U '$UUID'"
 	mountpoint=$(grep "^[[:blank:]]*UUID=$UUID" /etc/fstab | awk '{print $2}')
 	initctl emit -n mounting MOUNTPOINT=$mountpoint
