@@ -256,7 +256,9 @@ if [ "$ACTION" = add ]; then
         [ "$SHARERW" = yes ] && smbrw=Y || smbrw=N
         net conf addshare $(basename "$mountpoint" | tr ' ' '_') "$mountpoint" writeable=$smbrw guest_ok=y || :
         if [ "$SHARERW" = yes ]; then
-            net conf setparm $(basename "$mountpoint" | tr ' ' '_') "force user" xbian || :
+            if [ "$SHARELT" = no ]; then
+                net conf setparm $(basename "$mountpoint" | tr ' ' '_') "force user" xbian || :
+            fi
             net conf setparm $(basename "$mountpoint" | tr ' ' '_') "browseable" yes || :
         fi
     fi

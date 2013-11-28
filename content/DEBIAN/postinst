@@ -32,6 +32,10 @@ if [ $1 == "configure" ]; then
             us=$(grep SHARERW= /etc/usbmount/usbmount.conf)
             eval $(echo "sed -i 's%SHARERW=no%$us%' /var/tmp/usbmount.conf")
         fi
+        if grep -q "SHARELT=" /etc/usbmount/usbmount.conf; then
+            us=$(grep SHARELT= /etc/usbmount/usbmount.conf)
+            eval $(echo "sed -i 's%SHARELT=no%$us%' /var/tmp/usbmount.conf")
+        fi
         if grep -q "MOUNTOPTIONS=" /etc/usbmount/usbmount.conf; then
             us=$(grep MOUNTOPTIONS= /etc/usbmount/usbmount.conf | grep -v FS_MOUNTOPTIONS)
             eval $(echo "sed -i 's%MOUNTOPTIONS=\"sync,noexec,nodev,noatime,nodiratime,rw\"%$us%' /var/tmp/usbmount.conf")
