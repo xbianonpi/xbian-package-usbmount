@@ -18,7 +18,8 @@ while read d
 do
     test "$d" = "$MNTPNTDIR" && continue
     if ! in_list "$d" "$fstabdirs"; then
-        mountpoint -q "$d" || { UM_MOUNTPOINT=$d /etc/usbmount/pre-umount.d/remove_share; rmdir "$d"; }
+        ! mountpoint -q "$d" || [ "$ENABLED" -ne 1 ] || [ "$SHARESMB" = no ] || [ "$SHARERW" = no ] || [ "$SHARELT" = no ] && \
+            { UM_MOUNTPOINT=$d /etc/usbmount/pre-umount.d/remove_share; rmdir "$d"; }
     fi
 done < <(find "$MNTPNTDIR" -maxdepth 1 -type d)
 

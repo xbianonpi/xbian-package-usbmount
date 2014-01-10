@@ -2,21 +2,11 @@
 
 . /etc/usbmount/usbmount.conf
 
-# Test if the first parameter is in the list given by the second
-# parameter.
-in_list()
-{
-    for v in $2; do
-        [ "$1" != "$v" ] || return 0
-    done
-    return 1
-}
-
-#do the actual stuff we wanted
-[ -z "$UM_MOUNTPOINT" -o "$exists" = yes ] && exit 0
-
 counter=0
-while test -h $LINKDIR/usb$counter; do counter=$(($counter + 1)); done
+while test -h $LINKDIR/usb$counter; do 
+#    [ "$(readlink -e $LINKDIR/usb$counter)" = "$UM_MOUNTPOINT" ] && exit 0
+    counter=$(($counter + 1))
+done
 
 ln -s "$UM_MOUNTPOINT" $LINKDIR/usb$counter || exit 1
 

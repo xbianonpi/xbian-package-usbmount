@@ -97,7 +97,7 @@ fi
 log debug "trying to acquire lock /var/run/usbmount/.mount.lock"
 lockfile-create --retry 100 /var/run/usbmount/.mount || \
     { log err "cannot acquire lock /var/run/usbmount/.mount.lock"; exit 1; }
-trap '( lockfile-remove /var/run/usbmount/.mount )' 0
+trap '( lockfile-remove /var/run/usbmount/.mount; log debug "usbmount execution finished"; )' 0
 log debug "acquired lock /var/run/usbmount/.mount.lock"
 
 umask 022
@@ -253,14 +253,16 @@ if [ "$ACTION" = add ]; then
     initctl emit -n mounted MOUNTPOINT="$mountpoint"
 
     if [ "$SHARESMB" = yes ]; then
+        [ "$SHARELT" = yes ] && gst=N || gst=Y
         [ "$SHARERW" = yes ] && smbrw=Y || smbrw=N
-        net conf addshare $(basename "$mountpoint" | tr ' ' '_') "$mountpoint" writeable=$smbrw guest_ok=y || :
-        if [ "$SHARERW" = yes ]; then
-            if [ "$SHARELT" = no ]; then
-                net conf setparm $(basename "$mountpoint" | tr ' ' '_') "force user" xbian || :
-            fi
-            net conf setparm $(basename "$mountpoint" | tr ' ' '_') "browseable" yes || :
+        net conf addshare $(basename "$mountpoint" | tr ' ' '_') "$mountpoint" writeable=$smbrw guest_ok=$gst || :
+
+        [ $gst = N ] && net conf setparm $(basename "$mountpoint" | tr ' ' '_') "read list" xbian || :
+        if [ $smbrw = Y ]; then
+            net conf setparm $(basename "$mountpoint" | tr ' ' '_') "write list" xbian || :
+            net conf setparm $(basename "$mountpoint" | tr ' ' '_') "force user" xbian || :
         fi
+        net conf setparm $(basename "$mountpoint" | tr ' ' '_') "browseable" yes || :
     fi
 
     # do a copy of /proc/mounts
@@ -284,7 +286,8 @@ elif [ "$ACTION" = remove ]; then
 
 		log info "executing command: umount $mountpoint"
 		timeout=0
-		mountpoint -q "$mountpoint" && while ! umount "$mountpoint" > /dev/null 2>&1; do sleep 1; timeout=$(($timeout+1)); [ $timeout -gt 10 ] && break; done || true
+		mountpoint -q "$mountpoint" && while ! umount "$mountpoint" > /dev/null 2>&1; do sleep $timeout; timeout=$(($timeout+1)); [ $timeout -gt 10 ] && break; done || true
+		! mountpoint -q "$mountpoint" || umount -l "$mountpoint" || :
 		bs=$(basename "$mountpoint")
 		if [ -e "/var/run/usbmount/$bs" ]; then
 			rmdir "$mountpoint"
@@ -300,16 +303,23 @@ elif [ "$ACTION" = remove ]; then
 	    fi
     done
 elif [ "$ACTION" = spindown ]; then
+
     [ "$SPINDOWN" -gt 0 ] || exit 0
-    hdparm -B $DEVNAME | grep "not supported" && exit 0 || :
+
+    # check if this is device or just partition
+    p=$(udevadm info --query=path --name=$DEVNAME)
+    if [ ! -e /sys/$p/device ]; then
+        log info "$DEVNAME is partition. not setting spindown parameters"
+        return 0
+    fi
+
+#    hdparm -B $DEVNAME | grep "not supported" && exit 0 || :
     [ "$SPINDOWN" -gt 20 ] && SPINDOWN=20 || :
     SPINDOWN=$((SPINDOWN*60/5))
     log info "setting hd spindown (executing command: hdparm -S$SPINDOWN $DEVNAME)"
-    echo "setting hd spindown (executing command: hdparm -S$SPINDOWN $DEVNAME)" >> /var/log/user.log
     hdparm -S$SPINDOWN $DEVNAME || :
 else
     log err "unexpected: action '$1'"
     exit 1
 fi
 
-log debug "usbmount execution finished"
