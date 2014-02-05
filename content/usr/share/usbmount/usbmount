@@ -139,8 +139,10 @@ if [ "$ACTION" = add ]; then
         fi
         prio=${prio%,*}; prio=${prio#*pri=}
 
-        swapon -p $prio $DEVNAME
-        log info "$DEVNAME activated swap"
+        if [ $USESWAPS = yes ]; then
+            swapon -p $prio $DEVNAME
+            log info "$DEVNAME activated swap"
+        fi
         exit 0
     elif ! echo $USAGE | egrep -q "(filesystem|disklabel)"; then
 	log info "$DEVNAME does not contain a filesystem or disklabel"

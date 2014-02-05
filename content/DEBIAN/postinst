@@ -4,6 +4,10 @@ if [ $1 == "configure" ]; then
     [ -e /etc/usbmount/usbmount.conf ] || mv /var/tmp/usbmount.conf /etc/usbmount/usbmount.conf
 
     if [ -e /var/tmp/usbmount.conf ]; then
+        if grep -q "USESWAPS=" /etc/usbmount/usbmount.conf; then
+            us="$(grep USESWAPS= /etc/usbmount/usbmount.conf | grep -v 'e.g.' )"
+            eval $(echo "sed -i 's%USESWAPS=yes%$us%' /var/tmp/usbmount.conf")
+        fi
         if grep -q "ENABLED=" /etc/usbmount/usbmount.conf; then
             us="$(grep ENABLED= /etc/usbmount/usbmount.conf | grep -v 'e.g.' )"
             eval $(echo "sed -i 's%ENABLED=1%$us%' /var/tmp/usbmount.conf")
