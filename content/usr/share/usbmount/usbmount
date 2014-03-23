@@ -113,10 +113,6 @@ fi
 
 if [ "$ACTION" = add ]; then
 
-    if findmnt $DEVNAME > /dev/null; then
-        log info "$DEVNAME already mounted. exiting"
-        exit 0
-    fi
 
     [ "$SHARESMB" != yes ] || start -q wait-for-state TIMEOUT=100 WAIT_FOR=openbsd-inetd WAITER=usbmount$DEVNAME WAIT_STATE=started ACT=no || :
 
@@ -129,6 +125,14 @@ if [ "$ACTION" = add ]; then
     USAGE=$(echo "$DEVINFO"  | sed 's/.*[[:blank:]]USAGE="\([^"]*\)".*/\1/g; s/[[:blank:]]*//g;')
     LABEL=$(/sbin/blkid -p -s LABEL -o value $DEVNAME)
 
+    amnt=no
+    if [ "$FSTYPE" = btrfs ]; then
+        [ "$(btrfs fi show $DEVNAME | grep -c devid)" -ne 1 ] && amnt=yes
+    fi
+    if test $amnt = yes || findmnt $DEVNAME > /dev/null; then
+        log info "$DEVNAME already mounted. exiting"
+        exit 0
+    fi
 
     if test $FSTYPE = swap; then
         prio=0
