@@ -42,7 +42,7 @@ if [ $1 == "configure" ]; then
         fi
         if grep -q "MOUNTOPTIONS=" /etc/usbmount/usbmount.conf; then
             us=$(grep MOUNTOPTIONS= /etc/usbmount/usbmount.conf | grep -v FS_MOUNTOPTIONS)
-            eval $(echo "sed -i 's%MOUNTOPTIONS=\"sync,noexec,nodev,noatime,nodiratime,rw\"%$us%' /var/tmp/usbmount.conf")
+            eval $(echo "sed -i 's%MOUNTOPTIONS=\"sync,noexec,nodev,noatime,rw\"%$us%' /var/tmp/usbmount.conf")
         fi
 
         mv /var/tmp/usbmount.conf /etc/usbmount/usbmount.conf
