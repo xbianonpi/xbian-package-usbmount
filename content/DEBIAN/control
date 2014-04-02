@@ -6,7 +6,7 @@ Essential: No
 Priority: extra
 Architecture: all
 Replaces: usbmount
-Depends: lockfile-progs, udev, util-linux (>> 2.16), policykit-1
+Depends: lockfile-progs, udev, util-linux (>> 2.16), policykit-1, jfsutils
 Conflicts: usbmount
 Provides: usbmount
 Maintainer: mk01 <development@xbian.org>
