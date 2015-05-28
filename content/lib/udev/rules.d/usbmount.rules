@@ -1,8 +1,5 @@
 # set spindown
 ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="1", RUN+="/usr/share/usbmount/usbmount spindown"
-#ACTION=="add|change", KERNEL=="md[0-9a-zA-Z]*", ATTR{queue/rotational}=="1", RUN+="/usr/share/usbmount/usbmount spindown"
-
-ACTION=="remove",       RUN+="/etc/usbmount/mount.d/00-clean"
 
 # Rules for USBmount -*- conf -*-
 KERNEL=="sd*", DRIVERS=="sbp2",		ACTION=="add",	RUN+="/usr/share/usbmount/usbmount add"

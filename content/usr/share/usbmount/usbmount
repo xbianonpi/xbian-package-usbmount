@@ -109,12 +109,9 @@ if [ "$ACTION" != add -a "$ACTION" != remove -a "$ACTION" != spindown ]; then
         DEVNAME=$1
 fi
 
-[ "$STARTUDISKS" -eq '1' -o "$STARTUDISKS" = "yes" ] && udisks_load 
+[ "$STARTUDISKS" -eq '1' -o "$STARTUDISKS" = "yes" ] && udisks_load
 
 if [ "$ACTION" = add ]; then
-
-
-    [ "$SHARESMB" != yes ] || start -q wait-for-state TIMEOUT=100 WAIT_FOR=openbsd-inetd WAITER=usbmount$DEVNAME WAIT_STATE=started ACT=no || :
 
     # Grab device information from device and "divide it"
     #   FIXME: improvement: implement mounting by label (notice that labels
@@ -125,9 +122,15 @@ if [ "$ACTION" = add ]; then
     USAGE=$(echo "$DEVINFO"  | sed 's/.*[[:blank:]]USAGE="\([^"]*\)".*/\1/g; s/[[:blank:]]*//g;')
     LABEL=$(/sbin/blkid -p -s LABEL -o value $DEVNAME)
 
+    # check btrfs multidisk arrays already mounted
     amnt=no
     if [ "$FSTYPE" = btrfs ]; then
-        [ "$(btrfs fi show $DEVNAME | grep -c devid)" -ne 1 ] && amnt=yes
+        while ! btrfs dev ready $DEVNAME; do sleep 1; done
+        if [ "$(btrfs fi show $DEVNAME | grep -c devid)" -ne 1 ]; then
+            for d in $(btrfs fi show $DEVNAME | grep devid | awk '{print $NF}'); do
+                findmnt $d && amnt=yes || :
+            done
+        fi
     fi
     if test $amnt = yes || findmnt $DEVNAME > /dev/null; then
         log info "$DEVNAME already mounted. exiting"
@@ -211,7 +214,11 @@ if [ "$ACTION" = add ]; then
 		initctl emit -n mounting MOUNTPOINT="$MNTPNTDIR/$mountpoint$counter" TYPE=$FSTYPE DEVICE=$DEVNAME
 		# Mount the filesystem.
 		log info "executing command: mount -t$fstype ${options:+-o$options} $DEVNAME $MNTPNTDIR/$mountpoint$counter"
-		mount "-t$fstype" "${options:+-o$options}" "$DEVNAME" "$MNTPNTDIR/$mountpoint$counter"
+		if ! mount "-t$fstype" "${options:+-o$options}" "$DEVNAME" "$MNTPNTDIR/$mountpoint$counter"; then
+			rmdir "$MNTPNTDIR/$mountpoint$counter"
+			rm -f "/var/run/usbmount/$mountpoint$counter"
+			exit 0
+		fi
 
 		# Determine vendor and model.
 		vendor=
@@ -240,14 +247,10 @@ if [ "$ACTION" = add ]; then
 
 		# Run hook scripts; ignore errors.
 		export UM_DEVICE="$DEVNAME"
-		export UM_MOUNTPOINT="$MNTPNTDIR/$mountpoint$counter"
 		export UM_FILESYSTEM="$fstype"
 		export UM_MOUNTOPTIONS="$options"
 		export UM_VENDOR="$vendor"
 		export UM_MODEL="$model"
-		log info "executing command: run-parts /etc/usbmount/mount.d"
-		run-parts /etc/usbmount/mount.d || :
-
 		mountpoint="$MNTPNTDIR/$mountpoint$counter"
 	    else
 		# No suitable mount point found.
@@ -256,23 +259,12 @@ if [ "$ACTION" = add ]; then
 	    fi
 	fi
     fi
+
+    export UM_MOUNTPOINT="$mountpoint"
     initctl emit -n mounted MOUNTPOINT="$mountpoint"
 
-    if [ "$SHARESMB" = yes ]; then
-        [ "$SHARELT" = yes ] && gst=N || gst=Y
-        [ "$SHARERW" = yes ] && smbrw=Y || smbrw=N
-        net conf addshare $(basename "$mountpoint" | tr ' ' '_') "$mountpoint" writeable=$smbrw guest_ok=$gst || :
-
-        [ $gst = N ] && net conf setparm $(basename "$mountpoint" | tr ' ' '_') "read list" xbian || :
-        if [ $smbrw = Y ]; then
-            net conf setparm $(basename "$mountpoint" | tr ' ' '_') "write list" xbian || :
-            net conf setparm $(basename "$mountpoint" | tr ' ' '_') "force user" xbian || :
-        fi
-        net conf setparm $(basename "$mountpoint" | tr ' ' '_') "browseable" yes || :
-    fi
-
-    # do a copy of /proc/mounts
-    cat /proc/mounts > /var/run/usbmount/proc-mounts
+    log info "executing command: run-parts /etc/usbmount/mount.d"
+    run-parts /etc/usbmount/mount.d || :
 
 elif [ "$ACTION" = remove ]; then
 

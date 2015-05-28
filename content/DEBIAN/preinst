@@ -1,5 +1,5 @@
 #!/bin/bash
 
 if [ $1 == "install" -o $1 == "upgrade" ]; then
-        true
+        stop -q usbmount-cleaner >/dev/null 2>&1 || :
 fi

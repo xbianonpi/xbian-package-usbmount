@@ -1,12 +1,12 @@
 Origin: XBian
 Package: xbian-package-usbmount
-Version: 1.0.5-6
+Version: 2.0.1
 Section: utils
 Essential: No
 Priority: extra
 Architecture: all
 Replaces: usbmount
-Depends: lockfile-progs, udev, util-linux (>> 2.16), policykit-1, jfsutils
+Depends: lockfile-progs, udev, util-linux (>> 2.16), jfsutils
 Conflicts: usbmount
 Provides: usbmount
 Maintainer: mk01 <development@xbian.org>

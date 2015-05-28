@@ -50,4 +50,5 @@ if [ $1 == "configure" ]; then
 
 
     udevadm control --reload-rules || :
+    start -q usbmount-cleaner || :
 fi

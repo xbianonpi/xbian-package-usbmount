@@ -4,7 +4,7 @@
 
 counter=0
 while test -h $LINKDIR/usb$counter; do 
-#    [ "$(readlink -e $LINKDIR/usb$counter)" = "$UM_MOUNTPOINT" ] && exit 0
+    [ "$(readlink -e $LINKDIR/usb$counter)" = "$UM_MOUNTPOINT" ] && exit 0
     counter=$(($counter + 1))
 done
 
