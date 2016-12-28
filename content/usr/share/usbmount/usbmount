@@ -270,7 +270,7 @@ elif [ "$ACTION" = remove ]; then
 
     # A block or partition device has been removed.
     # Test if it is mounted.
-    findmnt -S "$DEVNAME"  -n -o fstype,target -r | sort -k2r \
+    findmnt -S "$DEVNAME"  -n -o fstype,target -r | sed 's/\\x20/ /g' | sort -k2r \
     | while read fstype mountpoint; do
 	    # If the mountpoint and filesystem type are maintained by
 	    # this script, unmount the filesystem.
