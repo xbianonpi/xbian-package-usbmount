@@ -97,7 +97,7 @@ fi
 log debug "trying to acquire lock /var/run/usbmount/.mount.lock"
 lockfile-create --retry 100 /var/run/usbmount/.mount || \
     { log err "cannot acquire lock /var/run/usbmount/.mount.lock"; exit 1; }
-trap '( lockfile-remove /var/run/usbmount/.mount; log debug "usbmount execution finished"; )' 0
+trap '( lockfile-remove /var/run/usbmount/.mount; touch /var/run/usbmount/.active; log debug "usbmount execution finished"; )' 0
 log debug "acquired lock /var/run/usbmount/.mount.lock"
 
 umask 022
